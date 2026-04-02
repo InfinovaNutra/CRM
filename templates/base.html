@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}NutraLeads CRM{% endblock %}</title>
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --surface2: #334155; --border: #475569;
+  --text: #f1f5f9; --text2: #94a3b8; --primary: #6366f1; --primary-hover: #818cf8;
+  --success: #22c55e; --warning: #f59e0b; --danger: #ef4444; --info: #06b6d4;
+  --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Nav */
+.nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; height: 60px; position: sticky; top: 0; z-index: 100; }
+.nav-brand { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-right: 2rem; text-decoration: none; }
+.nav-links { display: flex; gap: 0.25rem; }
+.nav-links a { color: var(--text2); text-decoration: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-size: 0.875rem; transition: all 0.2s; }
+.nav-links a:hover, .nav-links a.active { color: var(--text); background: var(--surface2); }
+
+/* Layout */
+.container { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+.page-header h1 { font-size: 1.5rem; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+.card h3 { margin-bottom: 0.75rem; font-size: 1rem; }
+
+/* Stats row */
+.stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; text-align: center; }
+.stat-card .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+.stat-card .stat-label { font-size: 0.8rem; color: var(--text2); margin-top: 0.25rem; }
+
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+@media (max-width: 768px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+/* Forms */
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 0.8rem; color: var(--text2); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+input, select, textarea { width: 100%; padding: 0.6rem 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 0.9rem; font-family: inherit; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+textarea { resize: vertical; min-height: 80px; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.2rem; border: none; border-radius: var(--radius); font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-success { background: var(--success); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+.btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+/* Badges */
+.badge { display: inline-block; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.badge:hover { filter: brightness(1.2); transform: scale(1.05); }
+.badge-new { background: #334155; color: #94a3b8; }
+.badge-researching { background: #1e3a5f; color: #60a5fa; }
+.badge-contacted { background: #3b1f6e; color: #a78bfa; }
+.badge-replied { background: #164e63; color: #22d3ee; }
+.badge-meeting_booked { background: #713f12; color: #fbbf24; }
+.badge-sampling { background: #14532d; color: #4ade80; }
+.badge-quoting { background: #4a1d96; color: #c084fc; }
+.badge-negotiating { background: #78350f; color: #fb923c; }
+.badge-won { background: #166534; color: #22c55e; }
+.badge-lost { background: #7f1d1d; color: #f87171; }
+
+/* Score */
+.score { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border-radius: 50%; font-weight: 700; font-size: 0.85rem; }
+.score-high { background: #166534; color: #22c55e; }
+.score-mid { background: #713f12; color: #fbbf24; }
+.score-low { background: #7f1d1d; color: #f87171; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+th { color: var(--text2); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+tr:hover { background: rgba(99,102,241,0.05); }
+
+/* Flash */
+.flash { padding: 0.75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: 0.875rem; }
+.flash-success { background: #166534; color: #bbf7d0; border: 1px solid #22c55e; }
+.flash-error { background: #7f1d1d; color: #fecaca; border: 1px solid #ef4444; }
+
+/* Tabs */
+.tabs { display: flex; gap: 0.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+.tab { padding: 0.6rem 1.2rem; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; font-size: 0.875rem; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* Email/Message display */
+.sequence-item { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 0.75rem; }
+.sequence-item h4 { color: var(--primary); font-size: 0.9rem; margin-bottom: 0.5rem; }
+.sequence-item p, .sequence-item .body { color: var(--text2); font-size: 0.85rem; line-height: 1.6; white-space: pre-wrap; }
+.copy-btn { background: var(--surface2); color: var(--text2); border: none; padding: 0.3rem 0.6rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; float: right; }
+.copy-btn:hover { background: var(--primary); color: white; }
+
+/* Pipeline board */
+.pipeline-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; }
+.pipeline-column { min-width: 240px; flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+.pipeline-column-header { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.pipeline-column-header h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text2); }
+.pipeline-column-header .count { background: var(--surface2); color: var(--text2); padding: 0.15rem 0.5rem; border-radius: 999px; font-size: 0.75rem; }
+.pipeline-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.75rem; margin: 0.5rem; cursor: pointer; transition: all 0.2s; }
+.pipeline-card:hover { border-color: var(--primary); transform: translateY(-1px); }
+.pipeline-card .company { font-weight: 600; font-size: 0.875rem; }
+.pipeline-card .type { font-size: 0.75rem; color: var(--text2); }
+
+/* Modal */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 200; justify-content: center; align-items: center; }
+.modal-overlay.active { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+.modal h2 { margin-bottom: 1rem; font-size: 1.2rem; }
+.modal-close { float: right; background: none; border: none; color: var(--text2); cursor: pointer; font-size: 1.2rem; }
+
+/* Utility */
+.text-muted { color: var(--text2); }
+.text-sm { font-size: 0.8rem; }
+.mb-1 { margin-bottom: 0.5rem; }
+.mt-1 { margin-top: 0.5rem; }
+.flex { display: flex; }
+.gap-1 { gap: 0.5rem; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.w-full { width: 100%; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="/" class="nav-brand">NutraLeads</a>
+  <div class="nav-links">
+    <a href="/" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
+    <a href="/find-leads" class="{{ 'active' if request.endpoint == 'find_leads' }}">Find Leads</a>
+    <a href="/enrich" class="{{ 'active' if request.endpoint == 'enrich' }}">Enrich</a>
+    <a href="/pipeline" class="{{ 'active' if request.endpoint == 'pipeline' }}">Pipeline</a>
+    <a href="/quotes" class="{{ 'active' if request.endpoint == 'quotes' }}">Quotes</a>
+    <a href="/profile" class="{{ 'active' if request.endpoint == 'profile' }}">Profile</a>
+  </div>
+</nav>
+<div class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+  <div class="flash flash-{{ category }}">{{ message }}</div>
+  {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</div>
+<script>
+function copyText(el) {
+  const text = el.closest('.sequence-item').querySelector('.body').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    el.textContent = 'Copied!';
+    setTimeout(() => el.textContent = 'Copy', 1500);
+  });
+}
+function showTab(tabGroup, tabName) {
+  document.querySelectorAll(`[data-tab-group="${tabGroup}"] .tab`).forEach(t => t.classList.remove('active'));
+  document.querySelectorAll(`[data-tab-group="${tabGroup}"] .tab-content`).forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab-group="${tabGroup}"] .tab[data-tab="${tabName}"]`).classList.add('active');
+  document.querySelector(`[data-tab-group="${tabGroup}"] .tab-content[data-tab="${tabName}"]`).classList.add('active');
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}{{ lead.company_name }} - NutraLeads CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ lead.company_name }}</h1>
+    <span class="badge badge-{{ lead.pipeline_status }}" style="margin-top:0.25rem">{{ lead.pipeline_status.replace('_', ' ').title() }}</span>
+    <span class="text-muted text-sm" style="margin-left:0.5rem">{{ lead.company_type.replace('_', ' ').title() if lead.company_type else '' }} &middot; {{ lead.location }}</span>
+  </div>
+  <div class="flex gap-1">
+    <span class="score {% if lead.fit_score >= 70 %}score-high{% elif lead.fit_score >= 40 %}score-mid{% else %}score-low{% endif %}" style="width:50px;height:50px;font-size:1.1rem">
+      {{ lead.fit_score }}
+    </span>
+  </div>
+</div>
+
+<div class="grid-2">
+  <!-- Left: Info & Contact -->
+  <div>
+    <div class="card">
+      <h3>Company Info</h3>
+      <p class="text-sm" style="margin-bottom:0.5rem">{{ lead.description }}</p>
+      {% if lead.website %}
+      <p class="text-sm"><strong>Website:</strong> <a href="{{ lead.website }}" target="_blank" style="color:var(--primary)">{{ lead.website }}</a></p>
+      {% endif %}
+      <p class="text-sm text-muted mt-1"><strong>Fit Reasoning:</strong> {{ lead.fit_reasoning }}</p>
+    </div>
+
+    <div class="card">
+      <h3>Contact & Status</h3>
+      <form method="POST" action="/lead/{{ lead.id }}/update">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Contact Name</label>
+            <input type="text" name="contact_name" value="{{ lead.contact_name }}">
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <input type="text" name="contact_role" value="{{ lead.contact_role }}">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="contact_email" value="{{ lead.contact_email }}">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" name="contact_phone" value="{{ lead.contact_phone }}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>LinkedIn</label>
+          <input type="text" name="contact_linkedin" value="{{ lead.contact_linkedin }}">
+        </div>
+        <div class="form-group">
+          <label>Pipeline Status</label>
+          <select name="pipeline_status">
+            {% for s in statuses %}
+            <option value="{{ s }}" {% if s == lead.pipeline_status %}selected{% endif %}>{{ s.replace('_', ' ').title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea name="notes" rows="3">{{ lead.notes }}</textarea>
+        </div>
+        <div class="flex gap-1">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <form method="POST" action="/lead/{{ lead.id }}/delete" style="display:inline" onsubmit="return confirm('Delete this lead?')">
+            <button type="submit" class="btn btn-danger btn-sm">Delete Lead</button>
+          </form>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: Outreach -->
+  <div data-tab-group="outreach">
+    <div class="tabs">
+      <button class="tab active" data-tab="emails" onclick="showTab('outreach','emails')">Email Sequence ({{ lead.email_sequence|length }})</button>
+      <button class="tab" data-tab="linkedin" onclick="showTab('outreach','linkedin')">LinkedIn Messages ({{ lead.linkedin_messages|length }})</button>
+    </div>
+
+    <div class="tab-content active" data-tab="emails">
+      {% for email in lead.email_sequence %}
+      <div class="sequence-item">
+        <div class="flex justify-between items-center">
+          <h4>Email {{ loop.index }}: {{ email.subject }}</h4>
+          <button class="copy-btn" onclick="copyText(this)">Copy</button>
+        </div>
+        <div class="body">{{ email.body }}</div>
+      </div>
+      {% endfor %}
+      {% if not lead.email_sequence %}
+      <p class="text-muted text-sm">No email sequence generated.</p>
+      {% endif %}
+    </div>
+
+    <div class="tab-content" data-tab="linkedin">
+      {% for msg in lead.linkedin_messages %}
+      <div class="sequence-item">
+        <div class="flex justify-between items-center">
+          <h4>{{ msg.type.replace('_', ' ').title() }}</h4>
+          <button class="copy-btn" onclick="copyText(this)">Copy</button>
+        </div>
+        <div class="body">{{ msg.message }}</div>
+      </div>
+      {% endfor %}
+      {% if not lead.linkedin_messages %}
+      <p class="text-muted text-sm">No LinkedIn messages generated.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

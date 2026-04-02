@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - NutraLeads CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Dashboard</h1>
+  <a href="/find-leads" class="btn btn-primary">+ Find New Leads</a>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-value">{{ total_leads }}</div>
+    <div class="stat-label">Total Leads</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ pipeline.get('won', 0) }}</div>
+    <div class="stat-label">Won Deals</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ quote_stats.total_quotes }}</div>
+    <div class="stat-label">Total Quotes</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">&pound;{{ "{:,.0f}".format(quote_stats.total_value) }}</div>
+    <div class="stat-label">Pipeline Value</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>Pipeline Overview</h3>
+    {% if pipeline %}
+    <table>
+      <tr><th>Stage</th><th>Count</th></tr>
+      {% for status in statuses %}
+      {% if pipeline.get(status, 0) > 0 %}
+      <tr>
+        <td><span class="badge badge-{{ status }}">{{ status.replace('_', ' ').title() }}</span></td>
+        <td>{{ pipeline.get(status, 0) }}</td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="text-muted text-sm">No leads yet. <a href="/find-leads" style="color:var(--primary)">Find some leads</a> to get started.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Recent Leads</h3>
+    {% if leads %}
+    <table>
+      <tr><th>Company</th><th>Score</th><th>Status</th></tr>
+      {% for lead in leads[:8] %}
+      <tr onclick="location.href='/lead/{{ lead.id }}'" style="cursor:pointer">
+        <td>{{ lead.company_name }}</td>
+        <td>
+          <span class="score {% if lead.fit_score >= 70 %}score-high{% elif lead.fit_score >= 40 %}score-mid{% else %}score-low{% endif %}">
+            {{ lead.fit_score }}
+          </span>
+        </td>
+        <td><span class="badge badge-{{ lead.pipeline_status }}">{{ lead.pipeline_status.replace('_', ' ').title() }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="text-muted text-sm">No leads yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if quote_stats.by_status %}
+<div class="card" style="margin-top:1rem">
+  <h3>Quotes by Status</h3>
+  <div class="stats-row">
+    {% for status, data in quote_stats.by_status.items() %}
+    <div class="stat-card">
+      <div class="stat-value">{{ data.count }}</div>
+      <div class="stat-label">{{ status.title() }} (&pound;{{ "{:,.0f}".format(data.value) }})</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

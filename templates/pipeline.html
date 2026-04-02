@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Pipeline - NutraLeads CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Pipeline Tracker</h1>
+  <span class="text-muted">{{ total }} leads total</span>
+</div>
+
+<div class="pipeline-board">
+  {% for status in statuses %}
+  <div class="pipeline-column" data-status="{{ status }}">
+    <div class="pipeline-column-header">
+      <h3>{{ status.replace('_', ' ').title() }}</h3>
+      <span class="count">{{ grouped[status]|length }}</span>
+    </div>
+    <div class="pipeline-cards">
+      {% for lead in grouped[status] %}
+      <div class="pipeline-card" onclick="location.href='/lead/{{ lead.id }}'">
+        <div class="flex justify-between items-center">
+          <span class="company">{{ lead.company_name }}</span>
+          <span class="score {% if lead.fit_score >= 70 %}score-high{% elif lead.fit_score >= 40 %}score-mid{% else %}score-low{% endif %}" style="width:30px;height:30px;font-size:0.7rem">
+            {{ lead.fit_score }}
+          </span>
+        </div>
+        <div class="type">{{ lead.company_type.replace('_', ' ').title() if lead.company_type else '' }}</div>
+        {% if lead.contact_name %}
+        <div class="text-sm text-muted" style="margin-top:0.25rem">{{ lead.contact_name }}</div>
+        {% endif %}
+        <div style="margin-top:0.5rem">
+          <select onchange="moveCard({{ lead.id }}, this.value)" onclick="event.stopPropagation()" style="padding:0.25rem;font-size:0.75rem;width:100%">
+            {% for s in statuses %}
+            <option value="{{ s }}" {% if s == status %}selected{% endif %}>{{ s.replace('_', ' ').title() }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% block scripts %}
+<script>
+function moveCard(leadId, newStatus) {
+  fetch(`/api/lead/${leadId}/status`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({status: newStatus})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) location.reload();
+  });
+}
+</script>
+{% endblock %}
+{% endblock %}

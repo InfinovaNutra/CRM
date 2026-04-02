@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Profile Settings - NutraLeads CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Profile Settings</h1>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>Company Details</h3>
+    <form method="POST">
+      <div class="form-group">
+        <label>Company Name</label>
+        <input type="text" name="company_name" value="{{ profile.company_name }}" placeholder="Your ingredient supply company">
+      </div>
+      <div class="form-group">
+        <label>Your Name</label>
+        <input type="text" name="contact_name" value="{{ profile.contact_name }}" placeholder="Full name">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" value="{{ profile.email }}" placeholder="you@company.com">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" name="phone" value="{{ profile.phone }}" placeholder="+44...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Website</label>
+        <input type="text" name="website" value="{{ profile.website }}" placeholder="https://yourcompany.com">
+      </div>
+      <div class="form-group">
+        <label>Ingredients Offered</label>
+        <textarea name="ingredients_offered" rows="3" placeholder="e.g. Vitamin D3, Omega-3 Fish Oil, Probiotics, Ashwagandha, Turmeric Extract...">{{ profile.ingredients_offered }}</textarea>
+        <p class="text-muted text-sm mt-1">Used by AI to tailor outreach emails to your actual product range.</p>
+      </div>
+      <div class="form-group">
+        <label>Value Proposition / Tagline</label>
+        <textarea name="tagline" rows="2" placeholder="e.g. Premium-grade nutraceutical ingredients with full traceability, competitive pricing, and rapid UK delivery">{{ profile.tagline }}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Anthropic API Key</label>
+        <input type="password" name="anthropic_api_key" value="{{ profile.anthropic_api_key }}" placeholder="sk-ant-...">
+        <p class="text-muted text-sm mt-1">Required for AI lead finding and enrichment. Get yours at <a href="https://console.anthropic.com" target="_blank" style="color:var(--primary)">console.anthropic.com</a></p>
+      </div>
+      <button type="submit" class="btn btn-primary w-full">Save Settings</button>
+    </form>
+  </div>
+
+  <div>
+    <div class="card">
+      <h3>About NutraLeads CRM</h3>
+      <div style="color:var(--text2); font-size:0.875rem; line-height:1.8">
+        <p>Built for UK nutraceutical ingredient suppliers to find and manage B2B leads.</p>
+        <p style="margin-top:0.75rem"><strong style="color:var(--text)">Features:</strong></p>
+        <p>&bull; AI-powered lead finding for UK supplement brands & CMOs</p>
+        <p>&bull; Company enrichment with fit scoring (0-100)</p>
+        <p>&bull; Auto-generated 3-email outreach sequences</p>
+        <p>&bull; LinkedIn connection & follow-up messages</p>
+        <p>&bull; Visual pipeline tracker with drag-to-move</p>
+        <p>&bull; Quotes CRM with ingredient pricing & stats</p>
+        <p>&bull; All data stored locally in SQLite</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Quick Start</h3>
+      <div style="color:var(--text2); font-size:0.875rem; line-height:1.8">
+        <p><strong style="color:var(--warning)">1.</strong> Add your Anthropic API key above</p>
+        <p><strong style="color:var(--warning)">2.</strong> Fill in your company details & ingredients</p>
+        <p><strong style="color:var(--warning)">3.</strong> Go to <a href="/find-leads" style="color:var(--primary)">Find Leads</a> to discover potential customers</p>
+        <p><strong style="color:var(--warning)">4.</strong> Or <a href="/enrich" style="color:var(--primary)">Enrich</a> companies you already know</p>
+        <p><strong style="color:var(--warning)">5.</strong> Track progress in <a href="/pipeline" style="color:var(--primary)">Pipeline</a></p>
+        <p><strong style="color:var(--warning)">6.</strong> Log quotes in <a href="/quotes" style="color:var(--primary)">Quotes CRM</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

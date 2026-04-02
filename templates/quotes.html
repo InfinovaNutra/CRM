@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Quotes CRM - NutraLeads CRM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Quotes CRM</h1>
+  <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('active')">+ New Quote</button>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-value">{{ stats.total_quotes }}</div>
+    <div class="stat-label">Total Quotes</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">&pound;{{ "{:,.0f}".format(stats.total_value) }}</div>
+    <div class="stat-label">Total Value</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">&pound;{{ "{:,.2f}".format(stats.avg_price_per_kg) }}</div>
+    <div class="stat-label">Avg Price/kg</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ "{:,.0f}".format(stats.total_quantity_kg) }} kg</div>
+    <div class="stat-label">Total Quantity</div>
+  </div>
+</div>
+
+{% if stats.by_status %}
+<div class="stats-row" style="margin-bottom:1.5rem">
+  {% for status, data in stats.by_status.items() %}
+  <div class="stat-card">
+    <div class="stat-value" style="font-size:1.5rem">{{ data.count }}</div>
+    <div class="stat-label">{{ status.title() }} (&pound;{{ "{:,.0f}".format(data.value) }})</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Ingredient</th>
+        <th>Company</th>
+        <th>Qty (kg)</th>
+        <th>Price/kg</th>
+        <th>Total</th>
+        <th>Status</th>
+        <th>Notes</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for q in quotes %}
+      <tr>
+        <form method="POST" action="/quotes/{{ q.id }}/update">
+          <td><input type="text" name="ingredient" value="{{ q.ingredient }}" style="width:120px"></td>
+          <td>
+            <select name="lead_id" style="width:130px">
+              <option value="">-- None --</option>
+              {% for l in leads %}
+              <option value="{{ l.id }}" {% if l.id == q.lead_id %}selected{% endif %}>{{ l.company_name }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><input type="number" name="quantity_kg" value="{{ q.quantity_kg }}" step="0.01" style="width:80px"></td>
+          <td><input type="number" name="price_per_kg" value="{{ q.price_per_kg }}" step="0.01" style="width:80px"></td>
+          <td>&pound;{{ "{:,.2f}".format(q.total_value) }}</td>
+          <td>
+            <select name="status" style="width:100px">
+              {% for s in quote_statuses %}
+              <option value="{{ s }}" {% if s == q.status %}selected{% endif %}>{{ s.title() }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td><input type="text" name="notes" value="{{ q.notes }}" style="width:120px"></td>
+          <td class="flex gap-1">
+            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+        </form>
+        <form method="POST" action="/quotes/{{ q.id }}/delete" onsubmit="return confirm('Delete?')" style="display:inline">
+            <button type="submit" class="btn btn-sm btn-danger">Del</button>
+        </form>
+          </td>
+      </tr>
+      {% endfor %}
+      {% if not quotes %}
+      <tr><td colspan="8" class="text-muted text-sm" style="text-align:center;padding:2rem">No quotes yet. Click "+ New Quote" to add one.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Add Quote Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('active')">&times;</button>
+    <h2>New Quote</h2>
+    <form method="POST" action="/quotes/add">
+      <div class="form-group">
+        <label>Ingredient</label>
+        <input type="text" name="ingredient" required placeholder="e.g. Vitamin D3, Omega-3 Fish Oil">
+      </div>
+      <div class="form-group">
+        <label>Company (optional)</label>
+        <select name="lead_id">
+          <option value="">-- Select Lead --</option>
+          {% for l in leads %}
+          <option value="{{ l.id }}">{{ l.company_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Quantity (kg)</label>
+          <input type="number" name="quantity_kg" step="0.01" value="0" required>
+        </div>
+        <div class="form-group">
+          <label>Price per kg (&pound;)</label>
+          <input type="number" name="price_per_kg" step="0.01" value="0" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status">
+          {% for s in quote_statuses %}
+          <option value="{{ s }}">{{ s.title() }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea name="notes" rows="2"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary w-full">Add Quote</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
