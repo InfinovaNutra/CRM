@@ -1,8 +1,31 @@
 import json
+import re
 import os
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
 import anthropic
 import models
+
+
+def extract_json(text):
+    """Extract JSON array from AI response, handling markdown fences and extra text."""
+    text = text.strip()
+    # Remove markdown code fences
+    text = re.sub(r'^```(?:json)?\s*\n?', '', text)
+    text = re.sub(r'\n?```\s*$', '', text)
+    text = text.strip()
+    # Try parsing directly
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    # Find JSON array in the text
+    match = re.search(r'\[[\s\S]*\]', text)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+    raise json.JSONDecodeError("No valid JSON array found", text, 0)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "nutraleads-dev-key-change-in-prod")
@@ -131,11 +154,8 @@ Return ONLY a valid JSON array. No markdown, no code fences, no explanation."""
                     max_tokens=8000,
                     messages=[{"role": "user", "content": prompt}],
                 )
-                text = resp.content[0].text.strip()
-                if text.startswith("```"):
-                    text = text.split("\n", 1)[1]
-                    text = text.rsplit("```", 1)[0]
-                data = json.loads(text)
+                text = resp.content[0].text
+                data = extract_json(text)
                 for lead_data in data:
                     lead_id = models.create_lead(**lead_data)
                     lead_data["id"] = lead_id
