@@ -5,7 +5,7 @@ import anthropic
 import models
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = os.environ.get("SECRET_KEY", "nutraleads-dev-key-change-in-prod")
 
 models.init_db()
 
@@ -365,4 +365,5 @@ def profile():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
