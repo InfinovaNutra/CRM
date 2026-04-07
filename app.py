@@ -94,6 +94,12 @@ def find_leads():
             if profile.get("tagline"):
                 supplier_info += f"Value proposition: {profile['tagline']}. "
 
+            existing_leads = models.get_leads()
+            existing_names = [l["company_name"] for l in existing_leads]
+            exclude_text = ""
+            if existing_names:
+                exclude_text = f"\n\nIMPORTANT: Do NOT include any of these companies (already in our database):\n{json.dumps(existing_names)}\nFind completely different companies not in this list.\n"
+
             prompt = f"""You are a B2B lead generation expert for the UK nutraceutical/supplement ingredient supply industry.
 
 {supplier_info}
@@ -102,6 +108,7 @@ Find exactly {num_leads} real, specific companies that match this description:
 {type_desc}
 
 {"Focus on companies likely to need: " + ingredient_focus if ingredient_focus else ""}
+{exclude_text}
 
 For EACH company, provide this JSON structure (return a JSON array):
 {{
@@ -156,11 +163,20 @@ Return ONLY a valid JSON array. No markdown, no code fences, no explanation."""
                 )
                 text = resp.content[0].text
                 data = extract_json(text)
+                existing_lower = {n.lower() for n in existing_names}
+                skipped = 0
                 for lead_data in data:
+                    if lead_data.get("company_name", "").lower() in existing_lower:
+                        skipped += 1
+                        continue
                     lead_id = models.create_lead(**lead_data)
                     lead_data["id"] = lead_id
                     results.append(lead_data)
-                flash(f"Found and saved {len(results)} leads!", "success")
+                    existing_lower.add(lead_data["company_name"].lower())
+                msg = f"Found and saved {len(results)} new leads!"
+                if skipped:
+                    msg += f" ({skipped} duplicates skipped)"
+                flash(msg, "success")
             except json.JSONDecodeError:
                 error = "Failed to parse AI response. Try again."
             except anthropic.APIError as e:
@@ -185,6 +201,15 @@ def enrich():
                 error = "Please paste at least one company name."
             else:
                 company_list = [c.strip() for c in companies_text.split("\n") if c.strip()]
+                existing_leads = models.get_leads()
+                existing_lower = {l["company_name"].lower() for l in existing_leads}
+                # Filter out companies already in database
+                new_companies = [c for c in company_list if c.lower() not in existing_lower]
+                already_exist = len(company_list) - len(new_companies)
+                if not new_companies:
+                    error = "All those companies are already in your database."
+                    return render_template("enrich.html", results=results, error=error)
+                company_list = new_companies
                 supplier_info = ""
                 if profile.get("company_name"):
                     supplier_info += f"Supplier: {profile['company_name']}. "
@@ -231,16 +256,16 @@ Return ONLY valid JSON array."""
                         max_tokens=8000,
                         messages=[{"role": "user", "content": prompt}],
                     )
-                    text = resp.content[0].text.strip()
-                    if text.startswith("```"):
-                        text = text.split("\n", 1)[1]
-                        text = text.rsplit("```", 1)[0]
-                    data = json.loads(text)
+                    text = resp.content[0].text
+                    data = extract_json(text)
                     for lead_data in data:
                         lead_id = models.create_lead(**lead_data)
                         lead_data["id"] = lead_id
                         results.append(lead_data)
-                    flash(f"Enriched and saved {len(results)} companies!", "success")
+                    msg = f"Enriched and saved {len(results)} companies!"
+                    if already_exist:
+                        msg += f" ({already_exist} already in database, skipped)"
+                    flash(msg, "success")
                 except json.JSONDecodeError:
                     error = "Failed to parse AI response. Try again."
                 except anthropic.APIError as e:
