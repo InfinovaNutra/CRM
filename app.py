@@ -118,40 +118,10 @@ For EACH company, provide this JSON structure (return a JSON array):
   "location": "UK city/region",
   "description": "What they do, products, manufacturing capabilities (2-3 sentences)",
   "fit_score": 0-100 score for how good a fit they are as a customer for a UK ingredient supplier,
-  "fit_reasoning": "Why this score - consider size, ingredient needs, buying patterns",
-  "contact_name": "Most relevant buyer/procurement contact name if findable",
-  "contact_role": "Their job title",
-  "contact_email": "Professional email if findable, otherwise best-guess format like firstname@company.com",
-  "contact_linkedin": "LinkedIn profile URL if findable",
-  "email_sequence": [
-    {{
-      "subject": "Email 1 subject - cold intro",
-      "body": "Professional cold email body (3-4 paragraphs). Reference their specific products/needs. Mention our ingredients/capabilities."
-    }},
-    {{
-      "subject": "Email 2 subject - value-add follow-up",
-      "body": "Follow-up email with industry insight or case study angle (3-4 paragraphs)"
-    }},
-    {{
-      "subject": "Email 3 subject - direct ask",
-      "body": "Final follow-up with specific offer or meeting request (2-3 paragraphs)"
-    }}
-  ],
-  "linkedin_messages": [
-    {{
-      "type": "connection_request",
-      "message": "Short LinkedIn connection request note (under 300 chars)"
-    }},
-    {{
-      "type": "followup_1",
-      "message": "First LinkedIn message after connecting (2-3 paragraphs)"
-    }},
-    {{
-      "type": "followup_2",
-      "message": "Second LinkedIn follow-up message (1-2 paragraphs)"
-    }}
-  ]
+  "fit_reasoning": "Why this score - consider size, ingredient needs, buying patterns"
 }}
+
+Do NOT include contact details, emails, or outreach messages. Only company information.
 
 Return ONLY a valid JSON array. No markdown, no code fences, no explanation."""
 
@@ -231,22 +201,10 @@ For EACH company, provide this JSON structure (return a JSON array):
   "location": "Location",
   "description": "What they do (2-3 sentences)",
   "fit_score": 0-100,
-  "fit_reasoning": "Why this score",
-  "contact_name": "Key buyer/procurement contact",
-  "contact_role": "Job title",
-  "contact_email": "Email if findable",
-  "contact_linkedin": "LinkedIn URL if findable",
-  "email_sequence": [
-    {{"subject": "Intro email subject", "body": "Cold email body tailored to this company"}},
-    {{"subject": "Follow-up subject", "body": "Follow-up email body"}},
-    {{"subject": "Final follow-up subject", "body": "Final email body"}}
-  ],
-  "linkedin_messages": [
-    {{"type": "connection_request", "message": "Connection note under 300 chars"}},
-    {{"type": "followup_1", "message": "First LinkedIn message"}},
-    {{"type": "followup_2", "message": "Second LinkedIn follow-up"}}
-  ]
+  "fit_reasoning": "Why this score"
 }}
+
+Do NOT include contact details, emails, or outreach messages. Only company information.
 
 Return ONLY valid JSON array."""
 
@@ -334,6 +292,113 @@ def delete_lead_route(lead_id):
     models.delete_lead(lead_id)
     flash("Lead deleted.", "success")
     return redirect(url_for("pipeline"))
+
+
+# ─── Generate Outreach ───
+@app.route("/lead/<int:lead_id>/generate-outreach", methods=["POST"])
+def generate_outreach(lead_id):
+    lead = models.get_lead(lead_id)
+    if not lead:
+        flash("Lead not found.", "error")
+        return redirect(url_for("pipeline"))
+    if not lead.get("contact_name"):
+        flash("Please add a contact name before generating outreach.", "error")
+        return redirect(url_for("lead_detail", lead_id=lead_id))
+    client = get_client()
+    if not client:
+        flash("No Anthropic API key configured. Set it in Profile Settings.", "error")
+        return redirect(url_for("lead_detail", lead_id=lead_id))
+
+    profile = models.get_profile()
+    supplier_info = ""
+    if profile.get("company_name"):
+        supplier_info += f"Your company: {profile['company_name']}. "
+    if profile.get("contact_name"):
+        supplier_info += f"Your name: {profile['contact_name']}. "
+    if profile.get("ingredients_offered"):
+        supplier_info += f"Ingredients you supply: {profile['ingredients_offered']}. "
+    if profile.get("tagline"):
+        supplier_info += f"Value proposition: {profile['tagline']}. "
+
+    prompt = f"""You are a B2B sales copywriter for the UK nutraceutical ingredient supply industry.
+
+{supplier_info}
+
+Write personalised outreach for this lead:
+- Company: {lead['company_name']}
+- Type: {lead.get('company_type', 'unknown')}
+- Description: {lead.get('description', 'N/A')}
+- Location: {lead.get('location', 'UK')}
+- Contact person: {lead['contact_name']}
+- Contact role: {lead.get('contact_role', 'N/A')}
+
+Generate a JSON object with:
+{{
+  "email_sequence": [
+    {{
+      "subject": "Email 1 subject - personalised cold intro",
+      "body": "Professional cold email (3-4 paragraphs). Address {lead['contact_name']} by name. Reference {lead['company_name']}'s specific products/needs. Mention our ingredients/capabilities. Include a clear CTA."
+    }},
+    {{
+      "subject": "Email 2 subject - value-add follow-up",
+      "body": "Follow-up email (3-4 paragraphs) with industry insight or relevant case study angle. Reference the first email."
+    }},
+    {{
+      "subject": "Email 3 subject - direct ask",
+      "body": "Final follow-up (2-3 paragraphs) with specific offer or meeting request. Create urgency."
+    }}
+  ],
+  "linkedin_messages": [
+    {{
+      "type": "connection_request",
+      "message": "Short personalised LinkedIn connection request to {lead['contact_name']} (under 300 chars). Mention {lead['company_name']} specifically."
+    }},
+    {{
+      "type": "followup_1",
+      "message": "First LinkedIn message after connecting (2-3 paragraphs). Reference their company and role."
+    }},
+    {{
+      "type": "followup_2",
+      "message": "Second LinkedIn follow-up (1-2 paragraphs). Direct ask for a call or meeting."
+    }}
+  ]
+}}
+
+Make all messages sound natural and human, not templated. Use UK English.
+Return ONLY valid JSON. No markdown, no code fences."""
+
+    try:
+        resp = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = resp.content[0].text
+        # extract_json returns a list, but here we expect an object
+        text = text.strip()
+        text = re.sub(r'^```(?:json)?\s*\n?', '', text)
+        text = re.sub(r'\n?```\s*$', '', text)
+        text = text.strip()
+        try:
+            outreach = json.loads(text)
+        except json.JSONDecodeError:
+            match = re.search(r'\{[\s\S]*\}', text)
+            if match:
+                outreach = json.loads(match.group())
+            else:
+                raise
+        models.update_lead(
+            lead_id,
+            email_sequence=outreach.get("email_sequence", []),
+            linkedin_messages=outreach.get("linkedin_messages", []),
+        )
+        flash(f"Outreach generated for {lead['contact_name']} at {lead['company_name']}!", "success")
+    except json.JSONDecodeError:
+        flash("Failed to parse AI response. Try again.", "error")
+    except anthropic.APIError as e:
+        flash(f"API error: {str(e)}", "error")
+
+    return redirect(url_for("lead_detail", lead_id=lead_id))
 
 
 # ─── Quotes CRM ───
